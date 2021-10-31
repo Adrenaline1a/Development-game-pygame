@@ -18,8 +18,7 @@ class Knight(pg.sprite.Sprite):
         self.dead = False
 
     def output(self):
-        if self.hp > 0:
-            self.screen.blit(self.image, self.rect)
+        self.screen.blit(self.image, self.rect)
 
     def update(self):
         if self.mleft and self.rect.left > 0:
@@ -95,18 +94,17 @@ def windowUpdate(screen, evil, bg_color, bullet, hero):
     pg.display.flip()
 
 
-def bullet_update(bullet, hero, test_group):
+def bullet_update(bullet, hero):
     bullet.update()
     for bullets in bullet.copy():
         if bullets.rect.right >= 1100:
             bullets.remove(bullet)
-    collisions = pg.sprite.groupcollide(test_group, bullet, False, True)
+    collisions = pg.sprite.spritecollide(hero, bullet, True)
     if collisions:
         hero.hp -= bullets.attack
-        print(hero.hp)
         if hero.hp == 0:
-            hero.remove(test_group)
-            del hero
+            print('kill')
+
 
 
 def main():
@@ -116,8 +114,6 @@ def main():
     bg_color = (255, 255, 0)
     evil = Monster(screen)
     hero = Knight(screen)
-    test_group = Group()
-    test_group.add(hero)
     bullet = Group()
     while True:
         pg.time.delay(15)
@@ -125,7 +121,7 @@ def main():
         controls(screen, evil, bullet)
         hero.update()
         evil.update()
-        bullet_update(bullet, hero, test_group)
+        bullet_update(bullet, hero)
         windowUpdate(screen, evil, bg_color, bullet, hero)
 
 
