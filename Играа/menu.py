@@ -1,6 +1,4 @@
 import pygame
-from database import Log
-from inputt import InputBox
 
 
 class Menu():
@@ -24,6 +22,7 @@ class Login(Menu):
     def __init__(self, game):
         Menu.__init__(self, game)
         self.state = "Login"
+        self.DISPLAY_W, self.DISPLAY_H = 720, 720
         self.bg = pygame.image.load('fone/-1.png')
         self.loginx, self.loginy = self.mid_w, self.mid_h + 30
         self.regx, self.regy = self.mid_w, self.mid_h + 50
@@ -69,9 +68,9 @@ class Login(Menu):
         self.move_cursor()
         if self.game.START_KEY:
             if self.state == 'Login':
-                Logg()
+                self.game.curr_menu = self.game.registration
             elif self.state == 'Registration':
-                self.game.curr_menu = self.game.options
+                self.game.curr_menu = self.game.registration
             elif self.state == 'Quit':
                 self.game.curr_menu = self.game.credits
             self.run_display = False
@@ -179,28 +178,47 @@ class CreditsMenu(Menu):
             quit()
 
 
-class Logg():
-    def __init__(self):
-        self.screen = pygame.display.set_mode((720, 720))
-        self.clock = pygame.time.Clock()
-        self.input_box1 = InputBox(200, 100, 140, 32)
-        self.input_box2 = InputBox(200, 150, 140, 32)
-        self.input_boxes = [self.input_box1, self.input_box2]
-        self.done = False
+class Logg(Menu):
+    def __init__(self, game):
+        Menu.__init__(self, game)
+        self.inp = game.text
+        self.loggx, self.loggy = self.mid_w, self.mid_h + 20
 
-        while not self.done:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.done = True
-                for box in self.input_boxes:
-                    box.handle_event(event)
+    def display_menu(self):
+        self.run_display = True
+        while self.run_display:
+            self.game.check_events()
+            self.check_input()
+            self.game.display.fill((0, 0, 0))
+            self.game.draw_text('Регистрация', 20, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 30)
+            self.game.draw_text("Логин: ", 20, self.loggx, self.loggy)
+            self.update()
+            self.draw()
+            self.blit_screen()
 
-            for box in self.input_boxes:
-                box.update()
+    def check_input(self):
+        if self.game.BACK_KEY:
+            self.game.curr_menu = self.game.main_menu
+            self.run_display = False
+        elif self.game.START_KEY:
+            # TO-DO: Create a Volume Menu and a Controls Menu
+            pass
 
-            self.screen.fill((30, 30, 30))
-            for box in self.input_boxes:
-                box.draw(self.screen)
+    def update(self):
+        width = max(200, self.game.txt_surface.get_width()+10)
+        self.game.rect.w = width
 
-            pygame.display.flip()
-            self.clock.tick(30)
+    def draw(self):
+        self.game.display.blit(self.game.txt_surface, (self.game.rect.x+5, self.game.rect.y+5))
+        pygame.draw.rect(self.game.display, self.game.color, self.game.rect, 2)
+        self.game.cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+                           login  TEXT,
+                           password TEXT 
+                            )""")
+        self.game.conn.commit()
+        self.game.cursor.execute(f"SELECT login FROM users WHERE login = '{self.inp}'")
+        if self.game.cursor.fetchone() is None:
+            self.game.cursor.execute(f"INSERT INTO users VALUES (?, ?)", (self.inp, self.inp))
+            self.game.conn.commit()
+        else:
+            self.game.draw_text("Такая запись уже есть", 20, self.game.DISPLAY_W/2, self.game.DISPLAY_H/3)
